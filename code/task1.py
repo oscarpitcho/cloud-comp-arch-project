@@ -35,7 +35,7 @@ if __name__ == '__main__':
     plt.yticks(range(0, 9))
     plt.xticks(range(0, 120000, 10000))
 
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x_val, tick_pos: "{:.0f}k".format(x_val / 1000)))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, tick: "{:.0f}k".format(x / 1000.)))
 
     for inter in INTERFERENCES:
         arr = data[inter]
