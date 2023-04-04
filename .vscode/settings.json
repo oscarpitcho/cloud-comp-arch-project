@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "kubernetes://schema/batch/v1@job": "file:///home/oscar/code/cloud-comp-arch-project/parsec-benchmarks/part2a/parsec-ferret.yaml"
+    }
+}
