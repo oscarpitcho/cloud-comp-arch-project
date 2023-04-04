@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 matplotlib.use('TkAgg')  # workaround, otherwise I get error
 
-DATA_FOLDER = os.path.join("..", "measurements", "task1")
+DATA_FOLDER = "measurements"
 INTERFERENCES = ["none", "ibench-cpu", "ibench-l1d", "ibench-l1i", "ibench-l2", "ibench-llc", "ibench-membw"]
 
 if __name__ == '__main__':
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     plt.yticks(range(0, 9))
     plt.xticks(range(0, 120000, 10000))
 
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x_val, tick_pos: "{:.0f}k".format(x_val / 1000)))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, tick: "{:.0f}k".format(x / 1000.)))
 
     for inter in INTERFERENCES:
         arr = data[inter]
