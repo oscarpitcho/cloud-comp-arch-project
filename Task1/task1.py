@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 matplotlib.use('TkAgg')  # workaround, otherwise I get error
 
-DATA_FOLDER = os.path.join("..", "measurements", "task1")
+DATA_FOLDER = "measurements"
 INTERFERENCES = ["none", "ibench-cpu", "ibench-l1d", "ibench-l1i", "ibench-l2", "ibench-llc", "ibench-membw"]
 
 if __name__ == '__main__':
