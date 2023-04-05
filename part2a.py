@@ -4,20 +4,21 @@
 import subprocess
 import re
 import os
+import sys
 import numpy as np
 import time
 
 
 
 BENCHMARKS = ['parsec-blackscholes', 'parsec-canneal', 'parsec-dedup','parsec-ferret', 'parsec-freqmine', 'parsec-radix', 'parsec-vips']
-INTERFERENCES = ['ibench-cpu','ibench-l1d', 'ibench-l1i', 'ibench-l2', 'ibench-llc', 'ibench-membw']
+INTERFERENCES =  ['ibench-cpu','ibench-l1d', 'ibench-l1i', 'ibench-l2', 'ibench-llc', 'ibench-membw']
 
-NUM_RUNS = 5
+NUM_RUNS = 1
 
 REGEX_REAL_TIME = r"real\s*([0-9]*)m(\d*.\d*)s"
 REGEX_SYS_TIME = r"sys\s*([0-9]*)m(\d*.\d*)s"
 REGEX_USER_TIME = r"user\s*([0-9]*)m(\d*.\d*)s"
-
+FAILED_BENCHMARKS = []
 
 #Runs interference and returns once it has started.
 def run_interference_and_wait(interference: str) -> None:
@@ -25,7 +26,7 @@ def run_interference_and_wait(interference: str) -> None:
 
     while True:
         output = subprocess.run(f"kubectl get pods -o wide | grep {interference}", shell=True, capture_output=True)
-        print(output.stdout.decode("utf-8"))
+        #print(output.stdout.decode("utf-8"))
         if "Running" in output.stdout.decode("utf-8"):
             time.sleep(10)
             return
@@ -39,7 +40,7 @@ def run_benchmark_and_wait(benchmark: str) -> None:
 
     while True:
         output = subprocess.run(f"kubectl get jobs -o wide | grep {benchmark}", shell=True, capture_output=True)
-        print(output.stdout.decode("utf-8"))
+        #print(output.stdout.decode("utf-8"))
         if "1/1" in output.stdout.decode("utf-8"):
             time.sleep(2)
             return
@@ -47,47 +48,54 @@ def run_benchmark_and_wait(benchmark: str) -> None:
         time.sleep(1)
     
 #Runs the benchmark and returns the real, sys and usr time, also deletes the job   
-def run_benchmark(benchmark: str, run: int):
+def run_benchmark(benchmark: str, interference: str, run: int):
 
     #This waits synchronously until benchmark is done
     run_benchmark_and_wait(benchmark)
     
-    output = subprocess.run(f"""kubectl logs $(kubectl get pods --selector=job-name={benchmark} --output=jsonpath='{{.items[*].metadata.name}}\')""", shell=True, capture_output=True)
-    output = output.stdout.decode("utf-8")
+    try: 
+        output = subprocess.run(f"""kubectl logs $(kubectl get pods --selector=job-name={benchmark} --output=jsonpath='{{.items[*].metadata.name}}\')""", shell=True, capture_output=True)
+        output = output.stdout.decode("utf-8")
+        real_time_min, real_time_sec = re.findall(REGEX_REAL_TIME, output)[0]
+        sys_time_min, sys_time_sec = re.findall(REGEX_SYS_TIME, output)[0]
+        user_time_min, usr_time_sec = re.findall(REGEX_USER_TIME, output)[0]
 
-    real_time_min, real_time_sec = re.findall(REGEX_REAL_TIME, output)[0]
-    sys_time_min, sys_time_sec = re.findall(REGEX_SYS_TIME, output)[0]
-    user_time_min, usr_time_sec = re.findall(REGEX_USER_TIME, output)[0]
+        real_time = float(real_time_min) * 60 + float(real_time_sec)
+        sys_time = float(sys_time_min) * 60 + float(sys_time_sec)
+        user_time = float(user_time_min) * 60 + float(usr_time_sec)
+        triplet = (real_time, sys_time, user_time)
+         
+    except:
+        print(f"Error running benchmark: {benchmark}, with interference: {interference}, run: {run} - output: {output.stdout.decode('utf-8')}")
+        FAILED_BENCHMARKS.append([benchmark, interference, run])
+        triplet = (0, 0, 0)
+    finally:
+        
+        subprocess.run(f"kubectl delete jobs/{benchmark}", shell=True)
+        return triplet
 
-
-    real_time = float(real_time_min) * 60 + float(real_time_sec)
-    sys_time = float(sys_time_min) * 60 + float(sys_time_sec)
-    user_time = float(user_time_min) * 60 + float(usr_time_sec)
-
-    subprocess.run(f"kubectl delete jobs/{benchmark}", shell=True)
-    return (real_time, sys_time, user_time)
 
 
 def main() -> int:
-    print("Removing previous results folder...")
-    subprocess.run("rm -r -f Task2a/results", shell=True)
-    os.mkdir("Task2a/results")
-
-
-
     res = {}
 
     for benchmark in BENCHMARKS:
         res[benchmark] = {}
-        print(f"Running benchmark: {benchmark}..., with no interference")
+        print(f"Running benchmark: {benchmark}, with no interference")
         
         run_results = []
         for i in range(NUM_RUNS):
 
-            int_res = run_benchmark(benchmark, i)
+            int_res = run_benchmark(benchmark, "NONE", i)
             run_results.append(int_res)
         
         res[benchmark]["no_int"] = run_results
+        os.makedirs(f"Task2a/results/{benchmark}-no-int", exist_ok=True)
+
+        #Save intermediate results because this takes a while
+        with open(f"Task2a/results/{benchmark}-no-int/agg_results.txt", "w") as f:
+            f.write(str(np.asarray(run_results).mean(axis=0)))
+
 
 
     for interference in INTERFERENCES:
@@ -103,7 +111,7 @@ def main() -> int:
             run_results = []
             for i in range(NUM_RUNS):
 
-                int_res = run_benchmark(benchmark, i)
+                int_res = run_benchmark(benchmark, interference, i)
                 run_results.append(int_res)
 
                 print(f"Run {i + 1} of {benchmark} with {interference} done")
@@ -112,6 +120,11 @@ def main() -> int:
                 time.sleep(1)
             
             res[benchmark][interference] = run_results
+
+            #save intermediate results because this takes a while
+            os.makedirs(f"Task2a/results/{benchmark}-{interference}", exist_ok=True)
+            with open(f"Task2a/results/{benchmark}-{interference}/agg_results.txt", "w") as f:
+                f.write(str(np.asarray(run_results).mean(axis=0)))
 
         #This is synchronous, we delete the interference before moving on to the next interference
         subprocess.run(f"kubectl delete -f interference-parsec/{interference}.yaml", shell=True)
