@@ -2,45 +2,25 @@
 
 import subprocess
 import re
+import numpy as np
 
 
-def test():
-    a = r"real\s*(\d*)m(\d*.\d*)s"
-    out = subprocess.run("ls", shell=True, capture_output=True).stdout.decode("utf-8")
-    with open("output.txt", "w") as file:
-        file.write(out)
-
-    measurement = re.findall(a, """Num of Runs: 100
-        Size of data: 2621440
-
-        real    2m1.117s
-        user    0m1.062s
-        sys     0m0.008s""")[0]
-
-    seconds = int(measurement[0]) * 60. + float(measurement[1])
-
-    print(seconds)
 
 
+res = {'parsec-blackscholes': {'no_int': [(0.898, 0.012, 0.839), (0.883, 0.012, 0.864)], 'ibench-cpu': [(1.147, 0.028, 1.042), (1.115, 0.012, 1.049)]}}
 def main():
-    benchmark = "parsec-blackscholes"
-    a = r"real\s*([0-9]*)m(\d*.\d*)s"
-    output = subprocess.run(f"""kubectl logs $(kubectl get pods --selector=job-name={benchmark} --output=jsonpath='{{.items[*].metadata.name}}\')""", shell=True, capture_output=True)
-
-    print(re.findall(a, """Num of Runs: 100
-    Size of data: 2621440
-
-    real    0m1.117s
-    user    0m1.062s
-    sys     0m0.008s""")[0])
-
-    print("Deleting job...")
-
-    print(subprocess.run(f"kubectl delete jobs/{benchmark}", shell=True))
-
+    for benchmark, interference_type_and_res in res.items():
+        print(f"benchmark: {benchmark}, interference_type_and_res: {interference_type_and_res}")
+        for interference_type, runs_res in interference_type_and_res.items():
+            print(f"interference_type: {interference_type}, runs_res: {runs_res}")
+            
+    avg_res = {(benchmark, interference_type):np.asarray(runs_res).mean(axis=0)
+               for benchmark, interference_type_and_res in res.items()
+               for interference_type, runs_res in interference_type_and_res.items()}
+    
+    print(avg_res)
     print("Done")
 
 
 if __name__ == "__main__":
-    # main()
-    test()
+    main()

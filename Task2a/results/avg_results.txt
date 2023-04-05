@@ -1,0 +1,1 @@
+{('parsec-blackscholes', 'no_int'): array([0.854, 0.008, 0.839]), ('parsec-blackscholes', 'ibench-cpu'): array([1.114 , 0.0335, 1.034 ])}
