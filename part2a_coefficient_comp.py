@@ -16,4 +16,4 @@ for benchmark, interferences in res.items():
     for int in interferences:
         norm_res[benchmark][int] = res[benchmark][int] / res[benchmark]['no_int']
         
-print(norm_res)
+print(f"norm_res: {norm_res}")

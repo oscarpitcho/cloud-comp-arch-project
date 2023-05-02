@@ -10,10 +10,10 @@ import time
 
 
 
-BENCHMARKS = ['parsec-blackscholes', 'parsec-canneal', 'parsec-dedup','parsec-ferret', 'parsec-freqmine', 'parsec-radix', 'parsec-vips']
+BENCHMARKS = ['parsec-blackscholes','parsec-canneal', 'parsec-dedup','parsec-ferret', 'parsec-freqmine', 'parsec-radix', 'parsec-vips']
 INTERFERENCES =  ['ibench-cpu','ibench-l1d', 'ibench-l1i', 'ibench-l2', 'ibench-llc', 'ibench-membw']
 
-NUM_RUNS = 1
+NUM_RUNS = 5
 
 REGEX_REAL_TIME = r"real\s*([0-9]*)m(\d*.\d*)s"
 REGEX_SYS_TIME = r"sys\s*([0-9]*)m(\d*.\d*)s"
@@ -52,27 +52,36 @@ def run_benchmark(benchmark: str, interference: str, run: int):
 
     #This waits synchronously until benchmark is done
     run_benchmark_and_wait(benchmark)
-    
-    try: 
-        output = subprocess.run(f"""kubectl logs $(kubectl get pods --selector=job-name={benchmark} --output=jsonpath='{{.items[*].metadata.name}}\')""", shell=True, capture_output=True)
-        output = output.stdout.decode("utf-8")
-        real_time_min, real_time_sec = re.findall(REGEX_REAL_TIME, output)[0]
-        sys_time_min, sys_time_sec = re.findall(REGEX_SYS_TIME, output)[0]
-        user_time_min, usr_time_sec = re.findall(REGEX_USER_TIME, output)[0]
+    attempt = 0
+    while True:
+        if attempt > 4:
+            print(f"Failed to get logs for benchmark: {benchmark}, with interference: {interference}, after 3 attempts. Returning 0,0,0 - output: {output.stdout.decode('utf-8')}")
+            FAILED_BENCHMARKS.append([benchmark, interference, run])
+            return (0, 0, 0)
+        try: 
+            output = subprocess.run(f"""kubectl logs $(kubectl get pods --selector=job-name={benchmark} --output=jsonpath='{{.items[*].metadata.name}}\')""", shell=True, capture_output=True)
+            output = output.stdout.decode("utf-8")
+            real_time_min, real_time_sec = re.findall(REGEX_REAL_TIME, output)[0]
+            sys_time_min, sys_time_sec = re.findall(REGEX_SYS_TIME, output)[0]
+            user_time_min, usr_time_sec = re.findall(REGEX_USER_TIME, output)[0]
 
-        real_time = float(real_time_min) * 60 + float(real_time_sec)
-        sys_time = float(sys_time_min) * 60 + float(sys_time_sec)
-        user_time = float(user_time_min) * 60 + float(usr_time_sec)
-        triplet = (real_time, sys_time, user_time)
-         
-    except:
-        print(f"Error running benchmark: {benchmark}, with interference: {interference}, run: {run} - output: {output.stdout.decode('utf-8')}")
-        FAILED_BENCHMARKS.append([benchmark, interference, run])
-        triplet = (0, 0, 0)
-    finally:
+            real_time = float(real_time_min) * 60 + float(real_time_sec)
+            sys_time = float(sys_time_min) * 60 + float(sys_time_sec)
+            user_time = float(user_time_min) * 60 + float(usr_time_sec)
+            triplet = (real_time, sys_time, user_time)
+            return triplet
+            
+        except:
+            attempt += 1
+            print(f"Error running benchmark: {benchmark}, with interference: {interference}, run: {run}")
+            FAILED_BENCHMARKS.append([benchmark, interference, run])
         
-        subprocess.run(f"kubectl delete jobs/{benchmark}", shell=True)
-        return triplet
+        #Delete the job
+        finally:
+            subprocess.run(f"kubectl delete jobs/{benchmark}", shell=True)
+            #Wait before trying again
+            time.sleep(30)
+
 
 
 
@@ -135,13 +144,31 @@ def main() -> int:
 
 
     print(f"Writing processed results to file..")
-    avg_res = {(benchmark, interference_type):np.asarray(runs_res).mean(axis=0)
+    avg_res = {(benchmark, interference_type):np.asarray(runs_res).mean(axis=0).tolist()
                for benchmark, interference_type_and_res in res.items()
                for interference_type, runs_res in interference_type_and_res.items()}
     
-    
     with open("Task2a/results/avg_results.txt", "w") as f:
-        f.write(str(avg_res))  
+        f.write(str(avg_res))
+
+    #Select the sys time for each benchmark
+    sys_time_dict = {}
+    for (benchmark, interference), values in avg_res.items():
+        if benchmark not in sys_time_dict:
+            sys_time_dict[benchmark] = {}
+        sys_time_dict[benchmark][interference] = values[0]
+
+
+    #Normalize the results
+    norm_res = {}
+    for benchmark, interferences in sys_time_dict.items():
+        if benchmark not in norm_res:
+            norm_res[benchmark] = {}
+        for int in interferences:
+            norm_res[benchmark][int] = sys_time_dict[benchmark][int] / sys_time_dict[benchmark]['no_int']
+
+    with open("Task2a/results/normalized_results.txt", "w") as f:
+        f.write(str(norm_res))
 
     print("Done!")
         

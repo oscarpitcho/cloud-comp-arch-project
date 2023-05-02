@@ -14,7 +14,7 @@ def main():
         for interference_type, runs_res in interference_type_and_res.items():
             print(f"interference_type: {interference_type}, runs_res: {runs_res}")
             
-    avg_res = {(benchmark, interference_type):np.asarray(runs_res).mean(axis=0)
+    avg_res = {(benchmark, interference_type):np.asarray(runs_res).mean(axis=0).tolist()
                for benchmark, interference_type_and_res in res.items()
                for interference_type, runs_res in interference_type_and_res.items()}
     
