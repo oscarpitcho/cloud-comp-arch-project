@@ -7,6 +7,6 @@ git clone https://github.com/eth-easl/memcache-perf-dynamic.git
 cd memcache-perf-dynamic || exit
 make
 
-echo "Start agent..."
+echo "Agent is ready."
 
 ./mcperf -T 16 -A
