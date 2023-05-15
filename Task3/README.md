@@ -34,4 +34,6 @@
    3. Run ```./mcperf -s <MEMCACHED_IP -a <INTERNAL_AGENT_A_IP -a <INTERNAL_AGENT_B_IP --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5```
    
 # Running the Parsec jobs - TODO: Scheduling
-1. Run ```kubectl create -f parsec-benchmarks/part3/parsec-blackscholes.yaml``` to create the blackscholes job. Right now with the config it's node selector is memcached, i.e. it will run on the same node as memcached. 
+1. Run ```kubectl create -f parsec-benchmarks/part3/parsec-<JOB_NAME>.yaml``` to create the blackscholes job. 
+ - **TODO:** Right now with the config it's node selector is memcached, i.e. it will run on the same node as memcached. 
+ - **TODO:** How many cores should each job get?
