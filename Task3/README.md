@@ -37,3 +37,14 @@
 1. Run ```kubectl create -f parsec-benchmarks/part3/parsec-<JOB_NAME>.yaml``` to create the blackscholes job. 
  - **TODO:** Right now with the config it's node selector is memcached, i.e. it will run on the same node as memcached. 
  - **TODO:** How many cores should each job get?
+
+
+# Ideas
+- **Problem:** On first run in single machine, it did not crash. 
+  - **Sol1:**  Run all jobs + memcached node b which has the lowest RAM available (4GB)
+    - **Results**
+      - *CPU*: Maxed on some / all cores depending on the job running
+      - *RAM*: Sometimes close to maxed but never. 
+      - *SLO*: Way above 1ms
+      - **Summary**: ALL JOBS RUN SUCCESSFULLY
+- Limit memory usage of Job to make sure it fails appropriately
