@@ -13,6 +13,10 @@ spec:
         imagePullPolicy: Always
         command: ["/bin/sh"]
         args: ["-c", "./run -a run -S splash2x -p radix -i native -n 1"]
+        resources:
+          limits:
+            memory: "2Mi"
+            cpu: "500m"
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "memcached"

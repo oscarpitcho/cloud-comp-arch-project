@@ -45,6 +45,8 @@
     - **Results**
       - *CPU*: Maxed on some / all cores depending on the job running
       - *RAM*: Sometimes close to maxed but never. 
-      - *SLO*: Way above 1ms
+      - *SLO*: Way above 1ms during the job runs
       - **Summary**: ALL JOBS RUN SUCCESSFULLY
+  - **Sol2**: From part2, parsec ferret is most susceptible to memory interference, i.e. it should need the most. We will run parsec-ferret with very low resource limit by modifying its corresponding yaml file
+    - **Results**: Nothing crashes still
 - Limit memory usage of Job to make sure it fails appropriately

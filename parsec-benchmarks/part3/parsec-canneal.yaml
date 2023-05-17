@@ -13,6 +13,10 @@ spec:
         imagePullPolicy: Always
         command: ["/bin/sh"]
         args: ["-c", "./run -a run -S parsec -p canneal -i native -n 1"]
+        resources:
+          limits:
+            memory: "2Mi"
+            cpu: "500m"
       restartPolicy: Never
       nodeSelector:
         cca-project-nodetype: "memcached"
