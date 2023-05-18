@@ -12,11 +12,7 @@ spec:
         name: parsec-blackscholes
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "./run -a run -S parsec -p blackscholes -i native -n 1"]
-        resources:
-          limits:
-            memory: "2Mi"
-            cpu: "500m"
+        args: ["-c", "taskset -c 0 ./run -a run -S parsec -p blackscholes -i native -n 1"]
       restartPolicy: Never
       nodeSelector:
-        cca-project-nodetype: "memcached"
+        cca-project-nodetype: "node-a-2core"

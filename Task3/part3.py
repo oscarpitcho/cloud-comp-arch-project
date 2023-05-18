@@ -21,9 +21,11 @@ NODE_TWO_CORES = "node-a-2core"
 NODE_FOUR_CORES = "node-b-4core"
 NODE_EIGHT_CORES = "node-c-8core"
 
+MEMCACHED_SERVICE_NAME = "some-memcached"
+MEMCACHED_IP = None
+
 NODES = [CLIENT_AGENT_A, CLIENT_AGENT_B, CLIENT_MEASURE, NODE_TWO_CORES, NODE_FOUR_CORES, NODE_EIGHT_CORES]
 
-GET_NODES_HEADERS = {"NAME": 0, "STATUS": 1, "ROLES": 2, "AGE": 3, "VERSION": 4, "INTERNAL-IP": 5, "EXTERNAL-IP": 6}
 
 
 
@@ -38,7 +40,7 @@ def main(args):
         sh = subprocess.run("kops update cluster part3.k8s.local --yes --admin", shell=True, capture_output=True)
 
         print("Waiting for cluster to be ready...")
-        sh = subprocess.run("kops validate cluster --wait 10m", shell=True, capture_output=True)
+        sh = subprocess.run("kops validate cluster --wait 10m", shell=True, capture_output=False)
         
         if not sh.returncode == 0:
             print("Cluster failed to initialize. Deleting cluster and exiting..")
@@ -92,12 +94,63 @@ def main(args):
             print(f"sending command: {ssh_command}")
             sh = subprocess.run(ssh_command, shell=True)
             print(f"Configured {node}!")
+            
+
+        print(f"Starting memcached")
+        sh = subprocess.run(f"""kubectl create -f memcache-t1-cpuset-part3.yaml""")
+
+        print(f"Launching the load on agent A")
+        sh = subprocess.run(f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_AGENT_A]["NAME"]} --command='cd memcache-perf-dynamic && ./mcperf -T 2 -A'""", shell=True, capture_output=True)
+
+        print(f"Launching the load on agent B")
+        sh = subprocess.run(f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_AGENT_B]["NAME"]} --command='cd memcache-perf-dynamic && ./mcperf -T 4 -A'""", shell=True, capture_output=True)
+
+
+
+        #Getting the IP of the memcached service
+        sh = subprocess.run(f"""kubectl get pods -o wide | grep {MEMCACHED_SERVICE_NAME}""", shell=True, capture_output=True)
+        MEMCACHED_IP = sh.stdout.decode("utf-8").split()[5] #IP of service is sixth element in the output 
+
+        print(f"Launching the measurement on the measure node")
+        ssh_command = f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_MEASURE]["NAME"]} \
+            --command='cd memcache-perf-dynamic && ./mcperf -s {MEMCACHED_IP} --loadonly && \
+                ./mcperf -s {MEMCACHED_IP} -a {node_infos[CLIENT_AGENT_A]["INTERNAL_IP"]} -a {node_infos[CLIENT_AGENT_B]["INTERNAL_IP"]} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5'"""
+        
+        sh = subprocess.run(ssh_command, shell=True, capture_output=True)
+    
+
     else:
         print("Skipping VM configuration...")
 
+    print("Deleting past jobs...")
+    sh = subprocess.run("kubectl delete jobs --all", shell=True, capture_output=True)
 
-    print("Creating the memcached deployment...")
-    sh = subprocess.run("kubectl de")
+
+    print("Launching the jobs...")
+    sh = subprocess.run("kubectl create -f parsec-benchmarks/part3/parsec-blackscholes.yaml", shell=True, capture_output=True)
+    sh = subprocess.run("kubectl create -f parsec-benchmarks/part3/parsec-canneal.yaml", shell=True, capture_output=True)
+    sh = subprocess.run("kubectl create -f parsec-benchmarks/part3/parsec-dedup.yaml", shell=True, capture_output=True)
+    sh = subprocess.run("kubectl create -f parsec-benchmarks/part3/parsec-ferret.yaml", shell=True, capture_output=True)
+    sh = subprocess.run("kubectl create -f parsec-benchmarks/part3/parsec-freqmine.yaml", shell=True, capture_output=True)
+    sh = subprocess.run("kubectl create -f parsec-benchmarks/part3/parsec-radix.yaml", shell=True, capture_output=True)
+    sh = subprocess.run("kubectl create -f parsec-benchmarks/part3/parsec-vips.yaml", shell=True, capture_output=True)
+
+    print("Waiting for jobs to finish...")
+
+    JOBS_FINISHED = False
+    while(not JOBS_FINISHED):
+        sh = subprocess.run("kubectl get jobs", shell=True, capture_output=True)
+        if(not ("0/1" in sh.stdout.decode("utf-8"))):
+            JOBS_FINISHED = True
+
+        time.sleep(5)
+
+    print("Jobs finished!")
+
+    sh = subprocess.run("kubectl get pods -o json > results.json", shell=True, capture_output=True)
+
+    sh = subprocess.run("python3 get_time.py results.json", shell=True, capture_output=True)
+
 
 
 if __name__ == "__main__":
