@@ -8,7 +8,8 @@ import psutil
 from docker.client import DockerClient
 from docker.models.containers import Container
 
-from job import Job
+from job import Job, LoadLevel
+from scheduler_logger import SchedulerLogger, JobName
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,73 +19,80 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 blackscholes = {
-    'name': 'blackscholes',
+    'name': 'BLACKSCHOLES',
     'image': 'anakli/cca:parsec_blackscholes',
     'n_threads': '1',
-    'cpuset_cpus': '1'
+    'cpuset_cpus': '1',
+    'type': 'parsec'
 }
 
 canneal = {
     'image': 'anakli/cca:parsec_canneal',
-    'name': 'canneal',
-    'n_threads': '1',
-    'cpuset_cpus': '1'
+    'name': 'CANNEAL',
+    'n_threads': '2',
+    'cpuset_cpus': '1',
+    'type': 'parsec'
 }
 
 dedup = {
     'image': 'anakli/cca:parsec_dedup',
-    'name': 'dedup',
+    'name': 'DEDUP',
     'n_threads': '1',
-    'cpuset_cpus': '2'
+    'cpuset_cpus': '2',
+    'type': 'parsec'
 }
 
 ferret = {
     'image': 'anakli/cca:parsec_ferret',
-    'name': 'ferret',
+    'name': 'FERRET',
     'n_threads': '2',
-    'cpuset_cpus': '2,3'
+    'cpuset_cpus': '2,3',
+    'type': 'parsec'
 }
 
 freqmine = {
     'image': 'anakli/cca:parsec_freqmine',
-    'name': 'freqmine',
+    'name': 'FREQMINE',
     'n_threads': '3',
-    'cpuset_cpus': '1,2,3'
+    'cpuset_cpus': '1,2,3',
+    'type': 'parsec'
 }
 
 radix = {
     'image': 'anakli/cca:splash2x_radix',
-    'name': 'splash2x.radix',
+    'name': 'RADIX',
     'n_threads': '2',
-    'cpuset_cpus': '2,3'
+    'cpuset_cpus': '2,3',
+    'type': 'splash2x'
 }
 
 vips = {
     'image': 'anakli/cca:parsec_vips',
-    'name': 'vips',
+    'name': 'VIPS',
     'n_threads': '3',
-    'cpuset_cpus': '1,2,3'
+    'cpuset_cpus': '1,2,3',
+    'type': 'parsec'
 }
 
 PARSEC_JOBS = [blackscholes, canneal, dedup, ferret, freqmine, radix, vips]
 MEMCACHE_PROCESS_NAME = "memcache"
 
 
-def initialize_jobs(client: DockerClient) -> {str, Job}:
+def initialize_jobs(client: DockerClient, scheduler_logger: SchedulerLogger) -> {str, Job}:
     jobs: {str, Job} = {}
     for config in PARSEC_JOBS:
-        name = config['name']
+        name = JobName[config['name']].value
         cont: Container = client.containers.create(
-            name=config['name'],
+            name=name,
             image=config["image"],
-            command=f"./bin/parsecmgmt -a run -p {name} -i native -n {config['n_threads']}",
+            command=f"./run -a run -S {config['type']} -p {name} -i native -n {config['n_threads']}",
             cpuset_cpus=config["cpuset_cpus"],
             detach=True
         )
         cont.reload()
         logger.info(f"Created container for {name}. Status: {cont.status}")
 
-        job = Job(config, cont)
+        job = Job(config, cont, scheduler_logger)
         jobs[name] = job
     return jobs
 
@@ -110,27 +118,36 @@ def set_memcached_affinity(pid: int, cpu_affinity: str):
 
 
 def run():
+    logger.info("Find memcached PID")
+    memcached_pid = get_memcached_pid()
+    logger.info(f"Memcached PID: {memcached_pid}")
+    memcached_process = psutil.Process(get_memcached_pid())
+    set_memcached_affinity(memcached_pid, "0,1")
+
     logger.info("Start setting up environment...")
+    scheduler_logger = SchedulerLogger()
+    scheduler_logger.job_start(JobName.MEMCACHED, {0, 1}, '2')
+
     client: DockerClient = docker.from_env()
-    jobs: {str, Job} = initialize_jobs(client)
+    jobs: {str, Job} = initialize_jobs(client, scheduler_logger)
 
-    job_canneal = jobs["canneal"]
-    job_blackscholes = jobs["blackscholes"]
-    job_dedup = jobs["dedup"]
-    job_ferret = jobs["ferret"]
-    job_freqmine = jobs["freqmine"]
-    job_vips = jobs["vips"]
-    job_radix = jobs["splash2x.radix"]
+    job_canneal = jobs[JobName.CANNEAL.value]
+    job_blackscholes = jobs[JobName.BLACKSCHOLES.value]
+    job_dedup = jobs[JobName.DEDUP.value]
+    job_ferret = jobs[JobName.FERRET.value]
+    job_freqmine = jobs[JobName.FREQMINE.value]
+    job_vips = jobs[JobName.VIPS.value]
+    job_radix = jobs[JobName.RADIX.value]
 
-    job_canneal.next_job[1] = job_blackscholes
+    job_blackscholes.next_job[1] = job_canneal
     job_dedup.next_job[2] = job_ferret
-    job_blackscholes.next_job[1] = job_freqmine
+    job_canneal.next_job[1] = job_freqmine
     job_ferret.next_job[3] = job_freqmine
     job_ferret.next_job[2] = job_freqmine
     job_freqmine.next_job[1] = job_vips
     job_freqmine.next_job[2] = job_vips
     job_freqmine.next_job[3] = job_vips
-    # job_vips.next_job[1] = job_radix
+    # job_vips.next_job[1] = job_radix  # radix can only use even number of CPUs
     job_vips.next_job[2] = job_radix
     job_vips.next_job[3] = job_radix
 
@@ -138,40 +155,75 @@ def run():
 
     logger.info("Environment created, start execution.")
 
-    memcached_pid = get_memcached_pid()
-    logger.info(f"Memcached PID: {memcached_pid}")
-    memcached_process = psutil.Process(get_memcached_pid())
-    set_memcached_affinity(memcached_pid, "0,1")
-
     try:
-        # start first jobs
-        job_canneal.start(core=1, load='high')
-        job_dedup.start(core=2, load='high')
-        job_ferret.start(core=3, load='high')
+        prev_level = LoadLevel.HIGH
+        counter = 0
+        timer = 1
 
-        sleep(0.5)
+        # start first jobs
+        job_blackscholes.start(core=1, load_level=prev_level)
+        job_dedup.start(core=2, load_level=prev_level)
+        job_ferret.start(core=3, load_level=prev_level)
+
+        memcached_process.cpu_percent()  # always 0
+
+        sleep(0.25)
 
         while remaining_jobs:
             iteration_set = remaining_jobs.copy()
             utilizations = psutil.cpu_percent(percpu=True)
 
-            status = 'medium'
-            if utilizations[0] > 70:
-                status = 'high'
-            elif utilizations[0] < 45:
-                status = 'low'
-            # logger.info(f"Utilization: {utilizations}, status: {status}")
+            current_level = prev_level
+            if prev_level == LoadLevel.HIGH:
+                counter = counter + 1
+                if memcached_process.cpu_percent() < 30:  # if utilizations[0] + utilizations[1] < 65 and counter >= 4:
+                    current_level = LoadLevel.LOW
+            else:
+                if memcached_process.cpu_percent() > 30:  # if utilizations[0] > 60:
+                    current_level = LoadLevel.HIGH
+                    counter = 0
+            status_change = current_level if current_level != prev_level else None
+            prev_level = current_level
+
+            """
+            current_level == LoadLevel.MEDIUM
+            if utilizations[0] > 65:
+                current_level = LoadLevel.HIGH
+                if utilizations[0] + utilizations[1] > 150:
+                    current_level = LoadLevel.CRITICAL
+            elif utilizations[0] < 42.5:
+                current_level = LoadLevel.LOW
+
+            status_change = None
+            if current_level == LoadLevel.LOW and prev_level >= LoadLevel.HIGH:
+                status_change = LoadLevel.LOW
+                prev_level = LoadLevel.LOW
+            elif current_level == LoadLevel.MEDIUM and prev_level == LoadLevel.CRITICAL:
+                status_change = LoadLevel.HIGH
+                prev_level = LoadLevel.HIGH
+            elif current_level == LoadLevel.HIGH and prev_level == LoadLevel.LOW:
+                status_change = LoadLevel.HIGH
+                prev_level = LoadLevel.HIGH
+            elif current_level == LoadLevel.CRITICAL and prev_level != LoadLevel.CRITICAL:
+                status_change = LoadLevel.CRITICAL
+                prev_level = LoadLevel.CRITICAL
+            """
+
+            # logger.info(f"Utilization: {utilizations}, status: {current_level}")
             # logger.info(f"Memcached utilization: {memcached_process.cpu_percent()}")
 
+            if status_change:
+                logger.info(f"Load level changed to: {status_change.name}")
+
             for job in filter(lambda j: j.activated, iteration_set):
-                if job.contact(status):
+                if job.contact(status_change, len(remaining_jobs)):
                     remaining_jobs.remove(job)
                     job.container.remove()
-                    logger.info(f"Removed container for job {job.container.name}.")
+                    logger.info(f"Removed container for job {job.name.value}.")
                     for cpu in filter(lambda core: job.next_job.__contains__(core), job.cpus):
-                        job.next_job[cpu].start(cpu, status)
+                        job.next_job[cpu].start(cpu, current_level)
 
-            sleep(0.5)
+            sleep(0.25)
     except KeyboardInterrupt:
         logger.info("Shutting down controller.")
         logger.info("Try to remove remaining containers")
@@ -183,10 +235,12 @@ def run():
             if job.container.status == "running":
                 job.container.kill()
             job.container.remove()
-            logger.info(f"Remove job {job.name}")
+            logger.info(f"Remove job {job.name.value}")
+            scheduler_logger.custom_event(job.name, "shutdown")
         logger.info("Shutdown completed")
 
-    logger.info("Finished all jobs. Wait a minute before terminating mcperf.")
+    scheduler_logger.end()
+    logger.info("Finished all jobs or shutdown. Make sure that memcached is running for at least one minute.")
 
 
 if __name__ == "__main__":
