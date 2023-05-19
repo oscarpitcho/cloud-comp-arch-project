@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 
 class LoadLevel(IntEnum):
     LOW = 1
-    MEDIUM = 2
-    HIGH = 3
-    CRITICAL = 4
+    HIGH = 2
 
 
 class Job:

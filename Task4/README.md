@@ -7,7 +7,6 @@
 - if gsutil throws permission error, run `gcloud auth application-default login`
 - after approx. 10min, the output should now contain the running VMs
 - check via running `kubectl get nodes -o wide`
-- edit scripts/setup_measure.sh to contain the correct ids/IP addresses
 - load scripts to the VMs via (remember to change paths and ids):
 
 ```
@@ -17,12 +16,12 @@
 ```
 
 - open terminal and enter into agent and measure server. Then run corresponding setup scripts. SSH via:
-`./google-cloud-sdk/bin/gcloud compute ssh --ssh-key-file ~/.ssh/cloud-computing ubuntu@client-agent-<id> --zone europe-west3-a`
-`./google-cloud-sdk/bin/gcloud compute ssh --ssh-key-file ~/.ssh/cloud-computing ubuntu@client-measure-<id> --zone europe-west3-a`
+```
+./google-cloud-sdk/bin/gcloud compute ssh --ssh-key-file ~/.ssh/cloud-computing ubuntu@client-agent-<id> --zone europe-west3-a
+./google-cloud-sdk/bin/gcloud compute ssh --ssh-key-file ~/.ssh/cloud-computing ubuntu@client-measure-<id> --zone europe-west3-a
+```
   
-- open terminal and enter into memcache server and follow the instructions from `setup_memcached.sh`. SSH via:
-
-`./google-cloud-sdk/bin/gcloud compute ssh --ssh-key-file ~/.ssh/cloud-computing ubuntu@memcache-server-<id> --zone europe-west3-a`
+- open terminal and enter into memcache server and follow the instructions from `setup_memcached.sh`.
 
 # Task 4 measuring
 
@@ -33,6 +32,9 @@
 ./mcperf -s <INTERNAL_MEMCACHED_IP> -a <INTERNAL_AGENT_IP> --noload -T 16 -C 4 -D 4 -Q 1000 -c 4 -t 900 --qps_interval 10 --qps_min 5000 --qps_max 100000
 ```
 - start controller via: `python3 dynamic_scheduler/dynamic_scheduler.py`
+  
+- store log files locally via
+`./google-cloud-sdk/bin/gcloud compute scp --scp-flag=-r ubuntu@memcache-server-<id>:/home/ubuntu/log20230519_101313.txt ./cloud-comp-arch-project/Task4/logs/ --zone europe-west3-a`
 
 # Delete cluster
 
