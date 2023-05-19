@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ssh into memcached node and install memcached
-./google-cloud-sdk/bin/gcloud compute ssh --ssh-key-file ~/.ssh/cloud-computing ubuntu@memcache-server-jblj --zone europe-west3-a
+./google-cloud-sdk/bin/gcloud compute ssh --ssh-key-file ~/.ssh/cloud-computing ubuntu@memcache-server-<id> --zone europe-west3-a
 sudo apt update
 sudo apt install -y python3 python3-pip memcached libmemcached-tools
 sudo systemctl status memcached

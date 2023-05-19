@@ -8,5 +8,3 @@ cd memcache-perf-dynamic || exit
 make
 
 echo "Agent is ready."
-
-./mcperf -T 16 -A

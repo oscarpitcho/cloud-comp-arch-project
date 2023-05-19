@@ -1,0 +1,52 @@
+2023-05-19T08:38:46.191850 start scheduler
+2023-05-19T08:38:46.191879 start memcached [0,1] 2
+2023-05-19T08:38:46.607053 start dedup [2] 1
+2023-05-19T08:38:46.859149 start ferret [3] 2
+2023-05-19T08:38:47.550431 start blackscholes [1] 1
+2023-05-19T08:39:04.485180 pause blackscholes
+2023-05-19T08:39:16.132830 unpause blackscholes
+2023-05-19T08:39:28.562273 end dedup
+2023-05-19T08:39:28.818717 update_cores ferret [2,3]
+2023-05-19T08:39:28.857565 pause blackscholes
+2023-05-19T08:40:15.795790 unpause blackscholes
+2023-05-19T08:40:24.722199 pause blackscholes
+2023-05-19T08:40:54.830580 unpause blackscholes
+2023-05-19T08:41:04.537851 pause blackscholes
+2023-05-19T08:41:54.526694 unpause blackscholes
+2023-05-19T08:42:04.722613 pause blackscholes
+2023-05-19T08:42:14.688338 unpause blackscholes
+2023-05-19T08:42:15.764754 end ferret
+2023-05-19T08:42:16.048312 start freqmine [2] 3
+2023-05-19T08:42:16.088065 update_cores freqmine [2,3]
+2023-05-19T08:42:24.552388 pause blackscholes
+2023-05-19T08:43:24.771804 unpause blackscholes
+2023-05-19T08:43:34.496172 pause blackscholes
+2023-05-19T08:44:04.883679 unpause blackscholes
+2023-05-19T08:44:14.573752 pause blackscholes
+2023-05-19T08:45:04.812230 unpause blackscholes
+2023-05-19T08:45:14.759507 pause blackscholes
+2023-05-19T08:45:34.663618 unpause blackscholes
+2023-05-19T08:45:39.475128 end blackscholes
+2023-05-19T08:45:39.920268 start canneal [1] 2
+2023-05-19T08:45:44.780288 pause canneal
+2023-05-19T08:46:44.743508 unpause canneal
+2023-05-19T08:46:54.693101 pause canneal
+2023-05-19T08:47:04.647561 unpause canneal
+2023-05-19T08:47:24.535744 pause canneal
+2023-05-19T08:47:44.693035 unpause canneal
+2023-05-19T08:47:54.650129 pause canneal
+2023-05-19T08:48:14.799441 unpause canneal
+2023-05-19T08:48:42.398684 end freqmine
+2023-05-19T08:48:42.660258 start vips [2] 3
+2023-05-19T08:48:42.699543 update_cores vips [2,3]
+2023-05-19T08:48:44.519854 pause canneal
+2023-05-19T08:49:34.783829 end vips
+2023-05-19T08:49:35.328633 start radix [2] 2
+2023-05-19T08:49:35.385607 update_cores radix [2,3]
+2023-05-19T08:49:44.574912 unpause canneal
+2023-05-19T08:49:54.525451 pause canneal
+2023-05-19T08:49:57.445562 end radix
+2023-05-19T08:49:57.470006 unpause canneal
+2023-05-19T08:49:57.510229 update_cores canneal [2,3]
+2023-05-19T08:51:02.901800 end canneal
+2023-05-19T08:51:03.174419 end scheduler

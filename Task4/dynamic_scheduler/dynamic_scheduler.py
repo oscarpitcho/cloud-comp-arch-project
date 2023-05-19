@@ -106,10 +106,6 @@ def get_memcached_pid():
             break
     return pid
 
-# TODO: optimize to reach SLO. Options include specifying cores
-#       e.g via: container.update(cpus=1.5)
-#       pause some containers (i.e the ones critical to memcached)
-
 
 def set_memcached_affinity(pid: int, cpu_affinity: str):
     command = f'sudo taskset -a -cp {cpu_affinity} {pid}'  # bind process to specific cpus
@@ -147,7 +143,6 @@ def run():
     job_freqmine.next_job[1] = job_vips
     job_freqmine.next_job[2] = job_vips
     job_freqmine.next_job[3] = job_vips
-    # job_vips.next_job[1] = job_radix  # radix can only use even number of CPUs
     job_vips.next_job[2] = job_radix
     job_vips.next_job[3] = job_radix
 
@@ -157,8 +152,6 @@ def run():
 
     try:
         prev_level = LoadLevel.HIGH
-        counter = 0
-        timer = 1
 
         # start first jobs
         job_blackscholes.start(core=1, load_level=prev_level)
@@ -171,46 +164,16 @@ def run():
 
         while remaining_jobs:
             iteration_set = remaining_jobs.copy()
-            utilizations = psutil.cpu_percent(percpu=True)
 
             current_level = prev_level
             if prev_level == LoadLevel.HIGH:
-                counter = counter + 1
-                if memcached_process.cpu_percent() < 30:  # if utilizations[0] + utilizations[1] < 65 and counter >= 4:
+                if memcached_process.cpu_percent() < 40:
                     current_level = LoadLevel.LOW
             else:
-                if memcached_process.cpu_percent() > 30:  # if utilizations[0] > 60:
+                if memcached_process.cpu_percent() > 40:
                     current_level = LoadLevel.HIGH
-                    counter = 0
             status_change = current_level if current_level != prev_level else None
             prev_level = current_level
-
-            """
-            current_level == LoadLevel.MEDIUM
-            if utilizations[0] > 65:
-                current_level = LoadLevel.HIGH
-                if utilizations[0] + utilizations[1] > 150:
-                    current_level = LoadLevel.CRITICAL
-            elif utilizations[0] < 42.5:
-                current_level = LoadLevel.LOW
-
-            status_change = None
-            if current_level == LoadLevel.LOW and prev_level >= LoadLevel.HIGH:
-                status_change = LoadLevel.LOW
-                prev_level = LoadLevel.LOW
-            elif current_level == LoadLevel.MEDIUM and prev_level == LoadLevel.CRITICAL:
-                status_change = LoadLevel.HIGH
-                prev_level = LoadLevel.HIGH
-            elif current_level == LoadLevel.HIGH and prev_level == LoadLevel.LOW:
-                status_change = LoadLevel.HIGH
-                prev_level = LoadLevel.HIGH
-            elif current_level == LoadLevel.CRITICAL and prev_level != LoadLevel.CRITICAL:
-                status_change = LoadLevel.CRITICAL
-                prev_level = LoadLevel.CRITICAL
-            """
-
-            # logger.info(f"Utilization: {utilizations}, status: {current_level}")
-            # logger.info(f"Memcached utilization: {memcached_process.cpu_percent()}")
 
             if status_change:
                 logger.info(f"Load level changed to: {status_change.name}")
