@@ -23,6 +23,7 @@ NODE_EIGHT_CORES = "node-c-8core"
 
 MEMCACHED_SERVICE_NAME = "some-memcached"
 MEMCACHED_IP = None
+NUMBER_RUNS = 1
 
 NODES = [CLIENT_AGENT_A, CLIENT_AGENT_B, CLIENT_MEASURE, NODE_TWO_CORES, NODE_FOUR_CORES, NODE_EIGHT_CORES]
 
@@ -70,13 +71,11 @@ def main(args):
             # If the node name is in the line
             if name in line:
                 # Extract the full node name, internal IP, and external IP using regex
-                print(f"line: {line}")
                 match = re.search(rf"({name}-\w+)\s+\w+\s+\w+\s+\w+\s+[\w.]+\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+\.\d+\.\d+\.\d+)", line)
                 if match:
 
                     # Add the information to the final result dictionary
                     final_result[name] = {"NAME": match.group(1), "INTERNAL_IP": match.group(2), "EXTERNAL_IP": match.group(3)}
-                    print(f"Found {name} with name {match.group(1)}, internal IP {match.group(2)}, and external IP {match.group(3)}")
 
     
     #Format of one KV pair - client-agent-a : {'NAME': 'client-agent-a-gxs4', 'INTERNAL_IP': '10.0.16.5', 'EXTERNAL_IP': '34.159.209.141'}
@@ -95,33 +94,62 @@ def main(args):
             sh = subprocess.run(ssh_command, shell=True)
             print(f"Configured {node}!")
             
+            print(f"Starting memcached")
+            sh = subprocess.run(f"""kubectl delete pods --all""", shell=True, capture_output=True)
+            sh = subprocess.run(f"""kubectl create -f memcache-t1-cpuset-part3.yaml""", shell=True, capture_output=True)
 
-        print(f"Starting memcached")
-        sh = subprocess.run(f"""kubectl create -f memcache-t1-cpuset-part3.yaml""")
+            print(f"Waiting for memcached to start...")
+            MEMCACHED_START = False
+            while(not MEMCACHED_START):
+                sh = subprocess.run(f"""kubectl get pods | grep {MEMCACHED_SERVICE_NAME}""", shell=True, capture_output=True)
+                if("Running" in sh.stdout.decode("utf-8")):
+                    MEMCACHED_START = True
+                time.sleep(1)
+            print(f"Memcached started!")
+            
 
-        print(f"Launching the load on agent A")
-        sh = subprocess.run(f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_AGENT_A]["NAME"]} --command='cd memcache-perf-dynamic && ./mcperf -T 2 -A'""", shell=True, capture_output=True)
+  
 
-        print(f"Launching the load on agent B")
-        sh = subprocess.run(f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_AGENT_B]["NAME"]} --command='cd memcache-perf-dynamic && ./mcperf -T 4 -A'""", shell=True, capture_output=True)
+    #Getting the IP of the memcached service
+    sh = subprocess.run(f"""kubectl get pods -o wide | grep {MEMCACHED_SERVICE_NAME}""", shell=True, capture_output=True)
+    MEMCACHED_IP = sh.stdout.decode("utf-8").split()[5] #IP of service is sixth element in the output 
 
+    agent_a_login_command = f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_AGENT_A]["NAME"]}"""
+    agent_b_login_command = f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_AGENT_B]["NAME"]}"""
 
+    agent_a_launch_command = "cd memcache-perf-dynamic && ./mcperf -T 2 -A"
+    agent_b_launch_command = "cd memcache-perf-dynamic && ./mcperf -T 4 -A"
 
-        #Getting the IP of the memcached service
-        sh = subprocess.run(f"""kubectl get pods -o wide | grep {MEMCACHED_SERVICE_NAME}""", shell=True, capture_output=True)
-        MEMCACHED_IP = sh.stdout.decode("utf-8").split()[5] #IP of service is sixth element in the output 
+    agent_msmt_login_command = f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_MEASURE]["NAME"]}"""
+    agent_msmt_launch_command = f"""cd memcache-perf-dynamic && ./mcperf -s {MEMCACHED_IP} --loadonly && \
+                ./mcperf -s {MEMCACHED_IP} -a {node_infos[CLIENT_AGENT_A]["INTERNAL_IP"]} -a {node_infos[CLIENT_AGENT_B]["INTERNAL_IP"]} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5"""
+   
 
-        print(f"Launching the measurement on the measure node")
-        ssh_command = f"""gcloud compute ssh ubuntu@{node_infos[CLIENT_MEASURE]["NAME"]} \
-            --command='cd memcache-perf-dynamic && ./mcperf -s {MEMCACHED_IP} --loadonly && \
-                ./mcperf -s {MEMCACHED_IP} -a {node_infos[CLIENT_AGENT_A]["INTERNAL_IP"]} -a {node_infos[CLIENT_AGENT_B]["INTERNAL_IP"]} --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5'"""
         
-        sh = subprocess.run(ssh_command, shell=True, capture_output=True)
-    
+    print(f"""To launch measurement run the following commands. Run them in the following order:
+    1. Login to agent a: {agent_a_login_command}
+    2. Launch agent a: {agent_a_launch_command}
+    3. Login to agent b: {agent_b_login_command}
+    4. Launch agent b: {agent_b_launch_command}
+    5. Login to measurement node: {agent_msmt_login_command}
+    6. Launch measurement: {agent_msmt_launch_command}""")
 
-    else:
-        print("Skipping VM configuration...")
+   
 
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--init_cluster", help="Initialize the cluster. If already running, deletes cluster and starts a new one.",
+                        action="store_true")
+    parser.add_argument("--init_vms", help="Installs mcperf on the vms. If init_cluster is set, this is done automatically.", action="store_true")
+    parser.add_argument("--run_benchmarks", help="Runs the benchmarks and saves the results.", action="store_true")
+    args = parser.parse_args()
+    main(args)
+
+
+
+def run_benchmarks_and_wait():
     print("Deleting past jobs...")
     sh = subprocess.run("kubectl delete jobs --all", shell=True, capture_output=True)
 
@@ -146,19 +174,4 @@ def main(args):
         time.sleep(5)
 
     print("Jobs finished!")
-
-    sh = subprocess.run("kubectl get pods -o json > results.json", shell=True, capture_output=True)
-
-    sh = subprocess.run("python3 get_time.py results.json", shell=True, capture_output=True)
-
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--init_cluster", help="Initialize the cluster. If already running, deletes cluster and starts a new one.",
-                        action="store_true")
-    parser.add_argument("--init_vms", help="Runs the configuration of the VMs. If init_cluster is set, this is done automatically.", action="store_true")
-    args = parser.parse_args()
-    main(args)
 

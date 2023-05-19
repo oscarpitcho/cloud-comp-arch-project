@@ -32,6 +32,19 @@
       2. Run ```kubectl get nodes -o wide``` for the ip of the Agents
    2. Run ```./mcperf -s <MEMCACHED_IP> --loadonly```
    3. Run ```./mcperf -s <MEMCACHED_IP -a <INTERNAL_AGENT_A_IP -a <INTERNAL_AGENT_B_IP --noload -T 6 -C 4 -D 4 -Q 1000 -c 4 -t 10 --scan 30000:30500:5```
+
+
+# Instructions using scripts
+1. Start in the main directory of the project.
+2. Run ```Python3 Task3/set_up.py --init_cluster```
+3. Once the cluster is set this will print the command to start the mcperf measurement on _client-measure_ - Run the command
+4. Run ```Python3 Task3/run_experiments.py```
+5. Copy the terminal of mcperf and the files ```pods.json``` and ```processed_results.txt``` in appropriate folder.
+6. **For successive runs**: 
+   1. Repeat 2. without the flag ```--init_cluster``` - This will restart the mcperf processes on client agents
+   2. Relaunch the mcperf command on client-measure
+   3. Repeat 4. and 5.
+   
    
 # Running the Parsec jobs - TODO: Scheduling
 1. Run ```kubectl create -f parsec-benchmarks/part3/parsec-<JOB_NAME>.yaml``` to create the blackscholes job. 
