@@ -1,0 +1,17 @@
+Job:  parsec-blackscholes
+Job time:  0:02:12
+Job:  parsec-canneal
+Job time:  0:02:09
+Job:  parsec-dedup
+Job time:  0:01:25
+Job:  parsec-ferret
+Job time:  0:02:27
+Job:  parsec-freqmine
+Job time:  0:02:24
+Job:  parsec-radix
+Job time:  0:01:33
+Job:  parsec-vips
+Job time:  0:01:06
+Job:  memcached
+Total time: 0:02:29
+Start_and completion times: {'parsec-blackscholes': ('2023-05-22T15:03:32Z', '2023-05-22T15:05:44Z'), 'parsec-canneal': ('2023-05-22T15:03:29Z', '2023-05-22T15:05:38Z'), 'parsec-dedup': ('2023-05-22T15:03:31Z', '2023-05-22T15:04:56Z'), 'parsec-ferret': ('2023-05-22T15:03:31Z', '2023-05-22T15:05:58Z'), 'parsec-freqmine': ('2023-05-22T15:03:29Z', '2023-05-22T15:05:53Z'), 'parsec-radix': ('2023-05-22T15:03:30Z', '2023-05-22T15:05:03Z'), 'parsec-vips': ('2023-05-22T15:03:31Z', '2023-05-22T15:04:37Z')}
