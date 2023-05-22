@@ -1,0 +1,42 @@
+
+
+| Job                  | Run Time 1 (s) | Run Time 2 (s) | Run Time 3 (s) |
+|----------------------|----------------|----------------|----------------|
+|
+
+ parsec-blackscholes  | 144            | 133            | 133            |
+| parsec-canneal       | 134            | 128            | 130            |
+| parsec-dedup         | 79             | 75             | 75             |
+| parsec-ferret        | 155            | 147            | 149            |
+| parsec-freqmine      | 160            | 145            | 145            |
+| parsec-radix         | 107            | 99             | 100            |
+| parsec-vips          | 78             | 65             | 66             |
+| Total Time           | 166            | 149            | 150            |
+
+Certainly! Here's the revised table:
+
+| Job                  | Run Time 1 | Run Time 2 | Run Time 3 |
+|----------------------|------------|------------|------------|
+| parsec-blackscholes  | 0:02:24    | 0:02:13    | 0:02:13    |
+| parsec-canneal       | 0:02:14    | 0:02:08    | 0:02:10    |
+| parsec-dedup         | 0:01:19    | 0:01:15    | 0:01:15    |
+| parsec-ferret        | 0:02:35    | 0:02:27    | 0:02:29    |
+| parsec-freqmine      | 0:02:40    | 0:02:25    | 0:02:25    |
+| parsec-radix         | 0:01:47    | 0:01:39    | 0:01:40    |
+| parsec-vips          | 0:01:18    | 0:01:05    | 0:01:06    |
+| Total Time           | 0:02:46    | 0:02:29    | 0:02:30    |
+
+I replaced the "memcached" row with the "Total Time" row as per your request.
+
+Sure, here is the final table with the updated standard deviations:
+
+| Job                  | Run Time 1 (s) | Run Time 2 (s) | Run Time 3 (s) | Average Time (s) | Std. Deviation (s) |
+|----------------------|----------------|----------------|----------------|------------------|--------------------|
+| parsec-blackscholes  | 144            | 133            | 133            | 136.67           | 5.18544973         |
+| parsec-canneal       | 134            | 128            | 130            | 130.67           | 2.49443826         |
+| parsec-dedup         | 79             | 75             | 75             | 76.33            | 1.88561808         |
+| parsec-ferret        | 155            | 147            | 149            | 150.33           | 3.39934634         |
+| parsec-freqmine      | 160            | 145            | 145            | 150              | 7.07106781         |
+| parsec-radix         | 107            | 99             | 100            | 102              | 3.55902608         |
+| parsec-vips          | 78             | 65             | 66             | 69.67            | 5.90668172         |
+| Total Time           | 166            | 149            | 150            | 155              | 7.78888096         |
