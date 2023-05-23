@@ -10,20 +10,22 @@ JOBS: set = {"blackscholes", "canneal", "dedup", "ferret", "freqmine", "radix", 
 
 def calc_and_print_runtimes():
     summary = []
-    for i in range(3):
-        with open(f"submission/part_4_4_results_group_054/jobs_{i + 1}.txt", 'r') as file:
+    for i in range(1):
+        with open(f"submission/part_4_3_results_group_054/jobs_{i + 1}.txt", 'r') as file:
             jobs = {}
             start_time = -1
             end_time = -1
             for line in file.readlines():
                 tokens = line.replace("\n", "").split(" ")
 
-                date = dateutil.parser.isoparse(tokens[0]).timestamp()  # POSIX timestamp (float in seconds)
+                date = dateutil.parser.isoparse(tokens[0]).timestamp() + 60 * 60  # POSIX timestamp (float in seconds)
                 cmd = tokens[1]
                 job = tokens[2]
 
                 if job not in JOBS:
                     continue
+
+                print(date * 1000)
 
                 if cmd == "start":
                     if jobs.__contains__(job):
@@ -64,7 +66,6 @@ def calc_and_print_runtimes():
 
 
 if __name__ == "__main__":
-    # delete lines 1-3 from file
     """
     df = pd.read_csv('submission/part_4_3_results_group_054/mcperf_1.txt', delim_whitespace=True)
     df = df.iloc[:720]

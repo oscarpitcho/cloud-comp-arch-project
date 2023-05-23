@@ -10,7 +10,7 @@
 - load scripts to the VMs via (remember to change paths and ids):
 
 ```
-./google-cloud-sdk/bin/gcloud compute scp --scp-flag=-r ./cloud-comp-arch-project/Task4/dynamic_scheduler/ ubuntu@memcache-server-<id>:/home/ubuntu/ --zone europe-west3-a
+./google-cloud-sdk/bin/gcloud compute scp --scp-flag=-r ./cloud-comp-arch-project/Task4/submission/dynamic_scheduler/ ubuntu@memcache-server-<id>:/home/ubuntu/ --zone europe-west3-a
 ./google-cloud-sdk/bin/gcloud compute scp --scp-flag=-r ./cloud-comp-arch-project/Task4/scripts/ ubuntu@client-agent-<id>:/home/ubuntu/ --zone europe-west3-a
 ./google-cloud-sdk/bin/gcloud compute scp --scp-flag=-r ./cloud-comp-arch-project/Task4/scripts/ ubuntu@client-measure-<id>:/home/ubuntu/ --zone europe-west3-a
 ```
