@@ -1,0 +1,62 @@
+Job:  parsec-blackscholes
+Job time:  0:02:24
+Job:  parsec-canneal
+Job time:  0:02:14
+Job:  parsec-dedup
+Job time:  0:01:19
+Job:  parsec-ferret
+Job time:  0:02:35
+Job:  parsec-freqmine
+Job time:  0:02:40
+Job:  parsec-radix
+Job time:  0:01:47
+Job:  parsec-vips
+Job time:  0:01:18
+Job:  memcached
+Total time: 0:02:46
+
+Job:  parsec-blackscholes
+Job time:  0:02:13
+Job:  parsec-canneal
+Job time:  0:02:08
+Job:  parsec-dedup
+Job time:  0:01:15
+Job:  parsec-ferret
+Job time:  0:02:27
+Job:  parsec-freqmine
+Job time:  0:02:25
+Job:  parsec-radix
+Job time:  0:01:39
+Job:  parsec-vips
+Job time:  0:01:05
+Job:  memcached
+Total time: 0:02:29
+
+Job:  parsec-blackscholes
+Job time:  0:01:35
+Job:  parsec-canneal
+Job time:  0:02:38
+Job:  parsec-dedup
+Job time:  0:00:49
+Job:  parsec-ferret
+Job time:  0:02:33
+Job:  parsec-freqmine
+Job time:  0:02:25
+Job:  parsec-radix
+Job time:  0:00:52
+Job:  parsec-vips
+Job time:  0:01:21
+Job:  memcached
+Total time: 0:02:41
+
+
+data = [
+    [144, 133, 95],
+    [134, 128, 158],
+    [79, 75, 49],
+    [155, 147, 153],
+    [160, 145, 145],
+    [107, 99, 52],
+    [78, 65, 81],
+    [166, 149, 161]
+]

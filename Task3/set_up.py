@@ -94,18 +94,19 @@ def main(args):
             sh = subprocess.run(ssh_command, shell=True)
             print(f"Configured {node}!")
             
-            print(f"Starting memcached")
-            sh = subprocess.run(f"""kubectl delete pods --all""", shell=True, capture_output=True)
-            sh = subprocess.run(f"""kubectl create -f memcache-t1-cpuset-part3.yaml""", shell=True, capture_output=True)
+        print(f"Starting memcached")
+        sh = subprocess.run(f"""kubectl delete pods --all""", shell=True, capture_output=True)
+        sh = subprocess.run(f"""kubectl create -f memcache-t1-cpuset-part3.yaml""", shell=True, capture_output=True)
 
-            print(f"Waiting for memcached to start...")
-            MEMCACHED_START = False
-            while(not MEMCACHED_START):
-                sh = subprocess.run(f"""kubectl get pods | grep {MEMCACHED_SERVICE_NAME}""", shell=True, capture_output=True)
-                if("Running" in sh.stdout.decode("utf-8")):
-                    MEMCACHED_START = True
-                time.sleep(1)
-            print(f"Memcached started!")
+        print(f"Waiting for memcached to start...")
+        MEMCACHED_START = False
+        while(not MEMCACHED_START):
+            sh = subprocess.run(f"""kubectl get pods | grep {MEMCACHED_SERVICE_NAME}""", shell=True, capture_output=True)
+            if("Running" in sh.stdout.decode("utf-8")):
+                MEMCACHED_START = True
+            time.sleep(1)
+        print(f"Memcached started!")
+        print("Cluster config done!")
             
 
   

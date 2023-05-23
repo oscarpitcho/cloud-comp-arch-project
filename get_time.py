@@ -9,6 +9,7 @@ json_file = json.load(file)
 
 start_times = []
 completion_times = []
+start_time_and_completion_times = {}
 for item in json_file['items']:
     name = item['status']['containerStatuses'][0]['name']
     print("Job: ", str(name))
@@ -23,6 +24,7 @@ for item in json_file['items']:
             print("Job time: ", completion_time - start_time)
             start_times.append(start_time)
             completion_times.append(completion_time)
+            start_time_and_completion_times[name] = (start_time.strftime(time_format), completion_time.strftime(time_format))
         except KeyError:
             print("Job {0} has not completed....".format(name))
             sys.exit(0)
@@ -32,4 +34,5 @@ if len(start_times) != 7 and len(completion_times) != 7:
     sys.exit(0)
 
 print("Total time: {0}".format(max(completion_times) - min(start_times)))
+print(f"Start_and completion times: {start_time_and_completion_times}")
 file.close()
