@@ -1,4 +1,7 @@
+import matplotlib
 import matplotlib.pyplot as plt
+
+matplotlib.use('TkAgg')  # workaround, otherwise I get error
 
 # Define the number of threads and the corresponding normalized time for each application
 threads = [1, 2, 4, 8]

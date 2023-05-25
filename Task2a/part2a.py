@@ -139,7 +139,7 @@ def main() -> int:
         subprocess.run(f"kubectl delete -f interference-parsec/{interference}.yaml", shell=True)
 
     print(f"Writing results to file...")
-    with open("Task2a/results/raw_results.txt", "w") as f:
+    with open("results/raw_results.txt", "w") as f:
         f.write(str(res))   
 
 
@@ -148,7 +148,7 @@ def main() -> int:
                for benchmark, interference_type_and_res in res.items()
                for interference_type, runs_res in interference_type_and_res.items()}
     
-    with open("Task2a/results/avg_results.txt", "w") as f:
+    with open("results/avg_results.txt", "w") as f:
         f.write(str(avg_res))
 
     #Select the sys time for each benchmark
@@ -167,7 +167,7 @@ def main() -> int:
         for int in interferences:
             norm_res[benchmark][int] = sys_time_dict[benchmark][int] / sys_time_dict[benchmark]['no_int']
 
-    with open("Task2a/results/normalized_results.txt", "w") as f:
+    with open("results/normalized_results.txt", "w") as f:
         f.write(str(norm_res))
 
     print("Done!")
