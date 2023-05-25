@@ -11,7 +11,7 @@ JOBS: set = {"blackscholes", "canneal", "dedup", "ferret", "freqmine", "radix", 
 def calc_and_print_runtimes():
     summary = []
     for i in range(1):
-        with open(f"submission/part_4_3_results_group_054/jobs_{i + 1}.txt", 'r') as file:
+        with open(f"../submission/part_4_3_results_group_054/jobs_{i + 1}.txt", 'r') as file:
             jobs = {}
             start_time = -1
             end_time = -1
